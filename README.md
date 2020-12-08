@@ -11,3 +11,37 @@ This helper generates a `pg` QueryConfig object for the given query.
 ```bash
 npm install --save pgqtl
 ```
+
+### Usage
+
+#### Basic
+
+```js
+import pgqtl from "pgqtl";
+import { Client } from "pg";
+
+const client = new Client();
+
+await client.connect();
+
+/**
+ * pg client will receive { text: 'select now()' }
+ */
+const now = await client.query(pgqtl`select now()`);
+
+await client.end();
+```
+
+#### Bindings
+
+```js
+/**
+ * pg client will receive {
+ *  text: 'select name from users where active = $1 and id in ($2)',
+ *  values: [true, [1,2,3]]
+ * }
+ */
+const activeUsers = await client.query(
+  pgqtl`select name from users where active = ${true} and id in (${[1, 2, 3]})`
+);
+```
