@@ -1,15 +1,9 @@
-import { PgQuery, QueryNodes } from './types';
-import { getQueryText, getQueryValues } from './utils';
+import { QueryNodes, CompositeQuery } from './composite.query';
 
-export class InjectableQuery implements PgQuery {
-  constructor(readonly nodes: QueryNodes) {
-  }
+export class InjectableQuery<Input extends any, Output extends any = any> {
+  constructor(readonly nodes: QueryNodes<Input>) {}
 
-  get text() {
-    return getQueryText(this.nodes);
-  }
-
-  get values() {
-    return getQueryValues(this.nodes);
+  get freeze(): CompositeQuery<Input, Output> {
+    return new CompositeQuery(this.nodes);
   }
 }
