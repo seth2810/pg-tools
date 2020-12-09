@@ -1,30 +1,40 @@
-import type { QueryConfig } from 'pg';
+import { TextNode } from './nodes/text.node';
+import { BindingNode } from './nodes/binding.node';
 
-import type { Placeholder } from './types';
+import type { QueryNodes } from './queries/types';
+import { AggregateQuery } from './queries/aggregate.query';
+import { InjectableQuery } from './queries/injectable.query';
 
-export default <V extends any[] = any[]>(
+import type { Placeholders } from './types';
+
+const collectQueryNodes = (
   strings: TemplateStringsArray,
-  ...placeholders: Array<Placeholder>
-): QueryConfig<V> => {
-  const nodes: string[] = [];
-  const values: any[] = [...placeholders];
+  placeholders: Placeholders,
+): QueryNodes => strings.flatMap((string, index) => {
+  const stringNode = new TextNode(string);
 
-  strings.forEach((string, index) => {
-    const nodeIndex = index * 2;
-    nodes[nodeIndex] = string;
-  });
-
-  placeholders.forEach((_, index) => {
-    const bindIndex = index + 1;
-    const nodeIndex = index * 2 + 1;
-    nodes[nodeIndex] = `$${bindIndex}`;
-  });
-
-  const text = nodes.join('');
-
-  if (values.length === 0) {
-    return { text };
+  if (index === strings.length - 1) {
+    return stringNode;
   }
 
-  return { text, values: values as V };
-};
+  const placeholder = placeholders[index];
+
+  if (placeholder instanceof InjectableQuery) {
+    return [stringNode, ...placeholder.nodes];
+  }
+
+  return [stringNode, new BindingNode(placeholder)];
+});
+
+const pgqtl = (
+  strings: TemplateStringsArray,
+  ...placeholders: Placeholders
+): AggregateQuery => new AggregateQuery(collectQueryNodes(strings, placeholders));
+
+const inject = (
+  strings: TemplateStringsArray,
+  ...placeholders: Placeholders
+): InjectableQuery => new InjectableQuery(collectQueryNodes(strings, placeholders));
+
+// eslint-disable-next-line
+export default Object.assign(pgqtl, { inject });

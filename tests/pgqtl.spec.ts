@@ -4,6 +4,7 @@ describe('pgqtl', () => {
   test('should return same query for literals without placeholders', () => {
     expect(pgqtl`select * from table`).toEqual({
       text: 'select * from table',
+      values: [],
     });
   });
 
@@ -39,6 +40,29 @@ describe('pgqtl', () => {
         text: "select * from table where id in ($1) and name like '%$2%' and active = $3",
         values: [ids, nameLike, active],
       });
+  });
+
+  test('should allow to inject subqueries in placeholders', () => {
+    const ids = [1, 2, 3];
+    const idsCondition = pgqtl.inject`id in (${ids})`;
+    const activeCondition = pgqtl.inject`active = ${true}`;
+    const activeRecords = pgqtl.inject`select * from table where ${activeCondition}`;
+
+    expect(activeRecords).toMatchObject({
+      text: 'select * from table where active = $1',
+      values: [true],
+    });
+
+    expect(pgqtl`with (${activeRecords}) as a select name from a where ${idsCondition}`)
+      .toEqual({
+        text: 'with (select * from table where active = $1) as a select name from a where id in ($2)',
+        values: [true, ids],
+      });
+
+    expect(pgqtl`select name from (${activeRecords}) as a where ${idsCondition}`).toEqual({
+      text: 'select name from (select * from table where active = $1) as a where id in ($2)',
+      values: [true, ids],
+    });
   });
 });
 

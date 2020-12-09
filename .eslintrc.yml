@@ -17,3 +17,6 @@ parserOptions:
   ecmaVersion: 11
   sourceType: module
   project: ./tsconfig.eslint.json
+
+rules:
+  import/prefer-default-export: 0
