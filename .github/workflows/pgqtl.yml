@@ -38,3 +38,7 @@ jobs:
         with:
           coverageCommand: make test-coverage
           debug: true
+      - name: Build package
+        run: make build
+      - name: Test publish
+        run: make publish

@@ -1,6 +1,7 @@
 /src/
 /tests/
 /coverage/
+/cc-reporter/
 .github
 Makefile
 .editorconfig
