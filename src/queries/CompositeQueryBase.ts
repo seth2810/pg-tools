@@ -1,17 +1,6 @@
-import { QueryResult, QueryResultRow } from 'pg';
+import { TextNode, FunctionalNode } from '../nodes';
 
-import { TextNode, BindingNode, FunctionalNode } from '../nodes';
-
-export type QueryNodes<P> = Array<TextNode | BindingNode | FunctionalNode<P>>;
-
-type QueryParameter<P> = BindingNode | FunctionalNode<P>;
-
-interface PgClient {
-  query: <
-    R extends QueryResultRow = any,
-    I extends any[] = any[],
-  >(sql: string, values?: I) => Promise<QueryResult<R>>
-}
+import { QueryNodes, QueryParameter, PgClient } from './types';
 
 const getQueryParameters = (nodes: QueryNodes<any>): Array<QueryParameter<any>> => nodes
   .filter((node) => node instanceof TextNode === false);
@@ -32,17 +21,17 @@ const getQueryText = (nodes: QueryNodes<any>): string => {
   return parts.join('');
 };
 
-export class CompositeQuery<Input extends any, Output extends any> {
-  private readonly text: string;
+export class CompositeQueryBase<Input, Output> {
+  protected readonly text: string;
 
-  private readonly parameters: Array<QueryParameter<Input>>;
+  protected parameters: ReadonlyArray<QueryParameter<Input>>;
 
   constructor(nodes: QueryNodes<Input>) {
     this.text = getQueryText(nodes);
     this.parameters = getQueryParameters(nodes);
   }
 
-  async execute(client: PgClient, data: Input): Promise<Output[]> {
+  protected async sendQuery(client: PgClient, data: Input): Promise<Output[]> {
     const values = this.parameters.map((parameter) => {
       if (parameter instanceof FunctionalNode) {
         return parameter.value(data);

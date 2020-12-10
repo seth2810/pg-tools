@@ -80,7 +80,7 @@ describe('pgqtl', () => {
 
       await activeRecords.freeze.execute({ query });
 
-      expect(query).toBeCalledWith(
+      expect(query).toHaveBeenLastCalledWith(
         'select * from table where active = $1',
         [true],
       );
@@ -91,7 +91,7 @@ describe('pgqtl', () => {
     test('should return same query for literals without placeholders', async () => {
       await pgqtl`select * from table`.execute({ query });
 
-      expect(query).toBeCalledWith('select * from table', []);
+      expect(query).toHaveBeenLastCalledWith('select * from table', []);
     });
 
     test.each([
@@ -103,13 +103,13 @@ describe('pgqtl', () => {
     ])('should bind primitive type placeholder as query parameter (%s)', async (_, value) => {
       await pgqtl`select * from table where field = ${value}`.execute({ query });
 
-      expect(query).toBeCalledWith('select * from table where field = $1', [value]);
+      expect(query).toHaveBeenLastCalledWith('select * from table where field = $1', [value]);
     });
 
     test('should bind empty string placehodler as query parameter', async () => {
       await pgqtl`select * from table where field = ${''}`.execute({ query });
 
-      expect(query).toBeCalledWith('select * from table where field = $1', ['']);
+      expect(query).toHaveBeenLastCalledWith('select * from table where field = $1', ['']);
     });
 
     test.each([
@@ -118,7 +118,7 @@ describe('pgqtl', () => {
     ])('should bind array type placeholder without interpolation (%j)', async (values) => {
       await pgqtl`select * from table where field in (${values})`.execute({ query });
 
-      expect(query).toBeCalledWith('select * from table where field in ($1)', [values]);
+      expect(query).toHaveBeenLastCalledWith('select * from table where field in ($1)', [values]);
     });
 
     test('should bind placeholders using their appearance order', async () => {
@@ -127,7 +127,7 @@ describe('pgqtl', () => {
 
       await pgqtl`select * from table where id in (${ids}) and name like '%${nameLike}%' and active = ${active}`.execute({ query });
 
-      expect(query).toBeCalledWith(
+      expect(query).toHaveBeenLastCalledWith(
         "select * from table where id in ($1) and name like '%$2%' and active = $3",
         [ids, nameLike, active],
       );
@@ -142,7 +142,7 @@ describe('pgqtl', () => {
       await pgqtl`with (${activeRecords}) as t select name from t where ${idsCondition}`
         .execute({ query });
 
-      expect(query).toBeCalledWith(
+      expect(query).toHaveBeenLastCalledWith(
         'with (select * from table where active = $1) as t select name from t where id in ($2)',
         [true, ids],
       );
@@ -150,7 +150,7 @@ describe('pgqtl', () => {
       await pgqtl`select name from (${activeRecords}) as t where ${idsCondition}`
         .execute({ query });
 
-      expect(query).toBeCalledWith(
+      expect(query).toHaveBeenLastCalledWith(
         'select name from (select * from table where active = $1) as t where id in ($2)',
         [true, ids],
       );
