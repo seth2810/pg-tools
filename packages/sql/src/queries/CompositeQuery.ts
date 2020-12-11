@@ -1,12 +1,35 @@
-import { CompositeQueryBase } from './CompositeQueryBase';
+import { QueryConfig } from 'pg';
 
-import { PgClient } from './types';
+import { BindingValue, BindingNode, TextNode } from '../nodes';
 
-export class CompositeQuery<Input, Output> extends CompositeQueryBase<
-  Input,
-  Output
-> {
-  async execute(client: PgClient, data: Input) {
-    return this.sendQuery(client, data);
+import { QueryNodes } from './types';
+
+const getQueryValues = (nodes: QueryNodes): Array<BindingValue> =>
+  nodes.filter((node) => node instanceof BindingNode).map(({ value }) => value);
+
+const getQueryText = (nodes: QueryNodes): string => {
+  let bindIndex = 0;
+
+  const parts: string[] = nodes.map((node) => {
+    if (node instanceof TextNode) {
+      return node.value;
+    }
+
+    bindIndex += 1;
+
+    return `$${bindIndex}`;
+  });
+
+  return parts.join('');
+};
+
+export class CompositeQuery implements QueryConfig {
+  readonly text: string;
+
+  readonly values: any[];
+
+  constructor(nodes: QueryNodes) {
+    this.text = getQueryText(nodes);
+    this.values = getQueryValues(nodes);
   }
 }

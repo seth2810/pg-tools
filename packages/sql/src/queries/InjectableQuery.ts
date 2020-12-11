@@ -1,10 +1,10 @@
 import { CompositeQuery } from './CompositeQuery';
 import { QueryNodes } from './types';
 
-export class InjectableQuery<Input extends any, Output extends any = any> {
-  constructor(readonly nodes: QueryNodes<Input>) {}
+export class InjectableQuery {
+  constructor(readonly nodes: QueryNodes) {}
 
-  get freeze(): CompositeQuery<Input, Output> {
+  get freeze(): CompositeQuery {
     return new CompositeQuery(this.nodes);
   }
 }

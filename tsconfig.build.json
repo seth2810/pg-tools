@@ -7,6 +7,9 @@
   "references": [
     {
       "path": "./packages/sql/tsconfig.json"
+    },
+    {
+      "path": "./packages/trx/tsconfig.json"
     }
   ]
 }

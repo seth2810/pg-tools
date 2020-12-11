@@ -1,13 +1,7 @@
 import sql from '../src';
-import { TextNode, BindingNode, FunctionalNode } from '../src/nodes';
+import { TextNode, BindingNode } from '../src/nodes';
 
 describe('sql', () => {
-  const query = jest.fn().mockReturnValue({});
-
-  beforeEach(() => {
-    query.mockClear();
-  });
-
   describe('inject', () => {
     test('should contain empty list of nodes for empty template', () => {
       expect(sql.inject``).toHaveProperty('nodes', []);
@@ -54,15 +48,6 @@ describe('sql', () => {
       ]);
     });
 
-    test('should convert function placeholder into functional node', () => {
-      const namePlaceholder = ({ name }: { name: string }) => name;
-
-      expect(sql.inject`name = ${namePlaceholder}`).toHaveProperty('nodes', [
-        new TextNode('name = '),
-        new FunctionalNode(namePlaceholder),
-      ]);
-    });
-
     test('should interpolate nested injectable templates nodes', () => {
       const ids = [1, 2, 3];
       const idsCondition = sql.inject`id in (${ids})`;
@@ -83,21 +68,19 @@ describe('sql', () => {
     test('should allow to freeze injectable template into composite', async () => {
       const activeRecords = sql.inject`select * from table where active = ${true}`;
 
-      await activeRecords.freeze.execute({ query });
-
-      expect(
-        query,
-      ).toHaveBeenLastCalledWith('select * from table where active = $1', [
-        true,
-      ]);
+      expect(activeRecords.freeze).toEqual({
+        text: 'select * from table where active = $1',
+        values: [true],
+      });
     });
   });
 
   describe('composite', () => {
-    test('should return same query for literals without placeholders', async () => {
-      await sql`select * from table`.execute({ query });
-
-      expect(query).toHaveBeenLastCalledWith('select * from table', []);
+    test('should return same query for literals without placeholders', () => {
+      expect(sql`select * from table`).toEqual({
+        text: 'select * from table',
+        values: [],
+      });
     });
 
     test.each([
@@ -108,56 +91,42 @@ describe('sql', () => {
       ['number', Number.MAX_SAFE_INTEGER],
     ])(
       'should bind primitive type placeholder as query parameter (%s)',
-      async (_, value) => {
-        await sql`select * from table where field = ${value}`.execute({
-          query,
+      (_, value) => {
+        expect(sql`select * from table where field = ${value}`).toEqual({
+          text: 'select * from table where field = $1',
+          values: [value],
         });
-
-        expect(
-          query,
-        ).toHaveBeenLastCalledWith('select * from table where field = $1', [
-          value,
-        ]);
       },
     );
 
-    test('should bind empty string placehodler as query parameter', async () => {
-      await sql`select * from table where field = ${''}`.execute({ query });
-
-      expect(
-        query,
-      ).toHaveBeenLastCalledWith('select * from table where field = $1', ['']);
+    test('should bind empty string placehodler as query parameter', () => {
+      expect(sql`select * from table where field = ${''}`).toEqual({
+        text: 'select * from table where field = $1',
+        values: [''],
+      });
     });
 
     test.each([[[1, 2, 3]], [['a', 'b', 'c']]])(
       'should bind array type placeholder without interpolation (%j)',
-      async (values) => {
-        await sql`select * from table where field in (${values})`.execute({
-          query,
+      (items) => {
+        expect(sql`select * from table where field in (${items})`).toEqual({
+          text: 'select * from table where field in ($1)',
+          values: [items],
         });
-
-        expect(
-          query,
-        ).toHaveBeenLastCalledWith('select * from table where field in ($1)', [
-          values,
-        ]);
       },
     );
 
-    test('should bind placeholders using their appearance order', async () => {
+    test('should bind placeholders using their appearance order', () => {
       const ids = [1, 2, 3];
       const [nameLike, active] = ['user', true];
 
-      await sql`select * from table where id in (${ids}) and name like '%${nameLike}%' and active = ${active}`.execute(
-        { query },
-      );
-
       expect(
-        query,
-      ).toHaveBeenLastCalledWith(
-        "select * from table where id in ($1) and name like '%$2%' and active = $3",
-        [ids, nameLike, active],
-      );
+        sql`select * from table where id in (${ids}) and name like '%${nameLike}%' and active = ${active}`,
+      ).toEqual({
+        text:
+          "select * from table where id in ($1) and name like '%$2%' and active = $3",
+        values: [ids, nameLike, active],
+      });
     });
 
     test('should allow to inject subqueries in placeholders', async () => {
@@ -166,31 +135,21 @@ describe('sql', () => {
       const activeCondition = sql.inject`active = ${true}`;
       const activeRecords = sql.inject`select * from table where ${activeCondition}`;
 
-      await sql`with (${activeRecords}) as t select name from t where ${idsCondition}`.execute(
-        {
-          query,
-        },
-      );
+      expect(
+        sql`with (${activeRecords}) as t select name from t where ${idsCondition}`,
+      ).toEqual({
+        text:
+          'with (select * from table where active = $1) as t select name from t where id in ($2)',
+        values: [true, ids],
+      });
 
       expect(
-        query,
-      ).toHaveBeenLastCalledWith(
-        'with (select * from table where active = $1) as t select name from t where id in ($2)',
-        [true, ids],
-      );
-
-      await sql`select name from (${activeRecords}) as t where ${idsCondition}`.execute(
-        {
-          query,
-        },
-      );
-
-      expect(
-        query,
-      ).toHaveBeenLastCalledWith(
-        'select name from (select * from table where active = $1) as t where id in ($2)',
-        [true, ids],
-      );
+        sql`select name from (${activeRecords}) as t where ${idsCondition}`,
+      ).toEqual({
+        text:
+          'select name from (select * from table where active = $1) as t where id in ($2)',
+        values: [true, ids],
+      });
     });
   });
 });

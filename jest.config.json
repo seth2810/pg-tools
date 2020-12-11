@@ -7,6 +7,14 @@
       "testMatch": [
         "<rootDir>/packages/sql/**/?(*.)+(spec|test).[jt]s?(x)"
       ]
+    },
+    {
+      "displayName": "@pg-tools/trx",
+      "testEnvironment": "node",
+      "preset": "ts-jest",
+      "testMatch": [
+        "<rootDir>/packages/trx/**/?(*.)+(spec|test).[jt]s?(x)"
+      ]
     }
   ]
 }

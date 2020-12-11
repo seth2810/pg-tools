@@ -1,23 +1,25 @@
 # PostgreSQL query tagged templates
 
-This library helps to easily create `pg` compatible [query configuration objects](https://node-postgres.com/features/queries#query-config-object) using a syntax similar to regular `SQL`.
+This package helps to easily create `pg` compatible [query configuration objects](https://node-postgres.com/features/queries#query-config-object) using a syntax similar to regular `SQL`.
 
 ## Install
 
 ```bash
-npm install --save pgqtl
+npm install --save @pg-tools/sql
 ```
 
 ## Usage
 
 ```ts
-import pgqtl from 'pgqtl';
+import { Pool } from 'pg';
+import sql from '@pg-tools/sql';
 
-const condition = pgqtl.inject`active = ${true}`;
+const pool = new Pool();
 
-const query = pgqtl<Array<User>>`select * from users where ${condition}`;
-
-const { now } = await query.execute(pg);
+/**
+ * equals to { text: 'select * from users where active = $1', values: [true] }
+ */
+const users = await pool.query(sql`select * from users where active = ${true}`);
 ```
 
 ## Concept

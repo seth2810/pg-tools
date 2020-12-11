@@ -1,11 +1,11 @@
-import { TextNode, BindingNode, FunctionalNode } from './nodes';
+import { TextNode, BindingNode } from './nodes';
 import { QueryNodes, InjectableQuery } from './queries';
 import { Placeholders, QueryFactory } from './types';
 
-const collectQueryNodes = <Params>(
+const collectQueryNodes = (
   strings: TemplateStringsArray,
-  placeholders: Placeholders<Params>,
-): QueryNodes<Params> =>
+  placeholders: Placeholders,
+): QueryNodes =>
   strings.flatMap((string, index) => {
     const stringNode = new TextNode(string);
 
@@ -19,21 +19,13 @@ const collectQueryNodes = <Params>(
       return [stringNode, ...placeholder.nodes];
     }
 
-    if (typeof placeholder === 'function') {
-      return [stringNode, new FunctionalNode(placeholder)];
-    }
-
     return [stringNode, new BindingNode(placeholder)];
   });
 
-const removeEmptyTextNodes = <Params>(
-  nodes: QueryNodes<Params>,
-): QueryNodes<Params> =>
-  nodes.filter(
-    (node) => node instanceof TextNode === false || node.value !== '',
-  );
+const removeEmptyTextNodes = (nodes: QueryNodes): QueryNodes =>
+  nodes.filter((node) => node instanceof BindingNode || node.value !== '');
 
-export const createQueryFactory = <Input, Result>(
-  factory: QueryFactory<Input, Result>,
-) => (strings: TemplateStringsArray, ...placeholders: Placeholders<Input>) =>
-  factory(removeEmptyTextNodes(collectQueryNodes(strings, placeholders)));
+export const createQueryFactory = <Result>(factory: QueryFactory<Result>) => (
+  strings: TemplateStringsArray,
+  ...placeholders: Placeholders
+) => factory(removeEmptyTextNodes(collectQueryNodes(strings, placeholders)));
