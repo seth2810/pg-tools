@@ -1,9 +1,6 @@
 {
-  "include": [
-    "src"
-  ],
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "lib": [
       "es2020"
     ],
@@ -11,10 +8,9 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "strict": true,
-    "outDir": "dist",
-    "rootDir": "./src",
     "sourceMap": false,
     "declaration": true,
+    "declarationMap": false,
     "noImplicitAny": true,
     "noUnusedLocals": true,
     "noImplicitReturns": true,

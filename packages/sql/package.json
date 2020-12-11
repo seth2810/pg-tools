@@ -1,0 +1,21 @@
+{
+  "name": "@pg-tools/sql",
+  "version": "0.0.1",
+  "author": "seth2810",
+  "license": "ISC",
+  "description": "PostgreSQL query template tagged literals",
+  "keywords": [
+    "pg",
+    "query",
+    "template",
+    "literals"
+  ],
+  "main": "index.js",
+  "peerDependencies": {
+    "pg": "7.14.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "preset": "ts-jest"
+  }
+}

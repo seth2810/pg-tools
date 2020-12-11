@@ -1,11 +1,10 @@
-/src/
-/tests/
-/coverage/
-/cc-reporter/
+src
+tests
+coverage
 .github
 Makefile
 .editorconfig
 .eslintignore
 .eslintrc.yml
-tsconfig.json
-tsconfig.eslint.json
+tsconfig*.json
+*.tsbuildinfo

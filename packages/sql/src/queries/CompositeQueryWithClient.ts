@@ -2,7 +2,10 @@ import { CompositeQueryBase } from './CompositeQueryBase';
 
 import { QueryNodes, PgClient } from './types';
 
-export class CompositeQueryWithClient<Input, Output> extends CompositeQueryBase<Input, Output> {
+export class CompositeQueryWithClient<Input, Output> extends CompositeQueryBase<
+  Input,
+  Output
+> {
   constructor(nodes: QueryNodes<Input>, private readonly client: PgClient) {
     super(nodes);
   }

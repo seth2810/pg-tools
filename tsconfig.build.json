@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [],
+  "exclude": [
+    "packages/**/tests"
+  ],
+  "references": [
+    {
+      "path": "./packages/sql/tsconfig.json"
+    }
+  ]
+}

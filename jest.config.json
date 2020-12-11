@@ -1,0 +1,12 @@
+{
+  "projects": [
+    {
+      "displayName": "@pg-tools/sql",
+      "testEnvironment": "node",
+      "preset": "ts-jest",
+      "testMatch": [
+        "<rootDir>/packages/sql/**/?(*.)+(spec|test).[jt]s?(x)"
+      ]
+    }
+  ]
+}

@@ -9,8 +9,8 @@ export type QueryNodes<Params> = ReadonlyArray<QueryNode<Params>>;
 export type QueryParameter<P> = BindingNode | FunctionalNode<P>;
 
 export interface PgClient {
-  query: <
-    R extends QueryResultRow = any,
-    V extends any[] = any[],
-  >(sql: string, values: V) => Promise<QueryResult<R>>
+  query: <R extends QueryResultRow = any, V extends any[] = any[]>(
+    sql: string,
+    values: V,
+  ) => Promise<QueryResult<R>>;
 }

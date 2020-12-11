@@ -5,7 +5,8 @@ import { Placeholders, QueryFactory } from './types';
 const collectQueryNodes = <Params>(
   strings: TemplateStringsArray,
   placeholders: Placeholders<Params>,
-): QueryNodes<Params> => strings.flatMap((string, index) => {
+): QueryNodes<Params> =>
+  strings.flatMap((string, index) => {
     const stringNode = new TextNode(string);
 
     if (index === strings.length - 1) {
@@ -25,12 +26,14 @@ const collectQueryNodes = <Params>(
     return [stringNode, new BindingNode(placeholder)];
   });
 
-const removeEmptyTextNodes = <Params>(nodes: QueryNodes<Params>): QueryNodes<Params> => nodes
-  .filter((node) => node instanceof TextNode === false || node.value !== '');
+const removeEmptyTextNodes = <Params>(
+  nodes: QueryNodes<Params>,
+): QueryNodes<Params> =>
+  nodes.filter(
+    (node) => node instanceof TextNode === false || node.value !== '',
+  );
 
 export const createQueryFactory = <Input, Result>(
   factory: QueryFactory<Input, Result>,
-) => (
-    strings: TemplateStringsArray,
-    ...placeholders: Placeholders<Input>
-  ) => factory(removeEmptyTextNodes(collectQueryNodes(strings, placeholders)));
+) => (strings: TemplateStringsArray, ...placeholders: Placeholders<Input>) =>
+  factory(removeEmptyTextNodes(collectQueryNodes(strings, placeholders)));

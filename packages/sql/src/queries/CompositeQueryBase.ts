@@ -2,8 +2,10 @@ import { TextNode, FunctionalNode } from '../nodes';
 
 import { QueryNodes, QueryParameter, PgClient } from './types';
 
-const getQueryParameters = (nodes: QueryNodes<any>): Array<QueryParameter<any>> => nodes
-  .filter((node) => node instanceof TextNode === false);
+const getQueryParameters = (
+  nodes: QueryNodes<any>,
+): Array<QueryParameter<any>> =>
+  nodes.filter((node) => node instanceof TextNode === false);
 
 const getQueryText = (nodes: QueryNodes<any>): string => {
   let bindIndex = 0;

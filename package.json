@@ -1,28 +1,19 @@
 {
-  "name": "pgqtl",
-  "version": "0.0.1",
-  "author": "seth2810",
+  "name": "@pg-tools/root",
+  "private": true,
   "license": "ISC",
-  "description": "PostgreSQL query template tagged literals",
-  "keywords": [
-    "pg",
-    "query",
-    "template",
-    "literals",
-    "postgresql"
-  ],
+  "description": "node-postgres usefull tools",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seth2810/pgqtl.git"
+    "url": "git+https://github.com/seth2810/pg-tools.git"
   },
   "bugs": {
-    "url": "https://github.com/seth2810/pgqtl/issues"
+    "url": "https://github.com/seth2810/pg-tools/issues"
   },
-  "homepage": "https://github.com/seth2810/pgqtl#readme",
+  "homepage": "https://github.com/seth2810/pg-tools#readme",
   "engines": {
     "node": ">=12"
   },
-  "main": "index.js",
   "scripts": {
     "test": "jest . --passWithNoTests"
   },
@@ -33,17 +24,14 @@
     "@typescript-eslint/parser": "4.9.1",
     "eslint": "7.15.0",
     "eslint-config-airbnb-typescript": "12.0.0",
+    "eslint-config-prettier": "7.0.0",
     "eslint-plugin-import": "2.22.1",
     "eslint-plugin-jest": "24.1.3",
+    "eslint-plugin-prettier": "3.2.0",
     "jest": "26.6.3",
+    "lerna": "3.22.1",
+    "prettier": "2.2.1",
     "ts-jest": "26.4.4",
     "typescript": "4.1.2"
-  },
-  "peerDependencies": {
-    "pg": "7.14.7"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "preset": "ts-jest"
   }
 }

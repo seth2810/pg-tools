@@ -1,22 +1,25 @@
 ---
 plugins:
-  - "jest"
-  - "@typescript-eslint"
+  - 'jest'
+  - '@typescript-eslint'
 
 env:
   node: true
   es2020: true
 
-parser: "@typescript-eslint/parser"
+parser: '@typescript-eslint/parser'
 
 extends:
-  - "airbnb-typescript/base"
-  - "plugin:jest/recommended"
+  - 'airbnb-typescript/base'
+  - 'plugin:jest/recommended'
+  - 'plugin:prettier/recommended'
+  - 'prettier/@typescript-eslint'
 
 parserOptions:
   ecmaVersion: 11
   sourceType: module
-  project: ./tsconfig.eslint.json
+  project:
+    - './tsconfig.json'
 
 rules:
   import/prefer-default-export: 0
