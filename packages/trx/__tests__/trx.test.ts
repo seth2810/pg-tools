@@ -1,6 +1,6 @@
 import { DatabaseError } from 'pg-protocol';
 import { MessageName } from 'pg-protocol/dist/messages';
-import { withTransaction } from '../src';
+import { withSavepoint, withTransaction } from '../src';
 import {
   IsolationLevel,
   AccessMode,
@@ -12,27 +12,28 @@ describe('trx', () => {
   const client = {
     query: jest.fn(),
   };
-  const executeQuery = jest.fn(
-    async (tx: PgClient): Promise<any> =>
-      tx.query('insert into users (id) values (1) returning *'),
-  );
+  const executeQuery = jest.fn();
+  const mkDatabaseError = (code: string): DatabaseError => {
+    const error = new DatabaseError('', 0, MessageName.error);
+    return Object.assign(error, { code });
+  };
+
+  const serializationError = mkDatabaseError('40001');
+  const deadlockDetectedError = mkDatabaseError('40P01');
+  const noActiveSqlTransactionError = mkDatabaseError('25P01');
 
   beforeEach(() => {
-    client.query.mockClear();
-    executeQuery.mockClear();
+    client.query.mockReset();
+    executeQuery.mockReset();
+    executeQuery.mockImplementation(
+      async (tx: PgClient): Promise<any> =>
+        tx.query('insert into users (id) values (1) returning *'),
+    );
   });
 
   describe('withTransaction', () => {
     const executeTransaction = (options?: TransactionOptions) =>
       withTransaction(client, executeQuery, { maxRetries: 0, ...options });
-
-    const mkDatabaseError = (code: string): DatabaseError => {
-      const error = new DatabaseError('', 0, MessageName.error);
-      return Object.assign(error, { code });
-    };
-
-    const deadlockDetectedError = new DatabaseError('', 0, MessageName.error);
-    deadlockDetectedError.code = '40P01';
 
     test('should reject when isolation level is not valid', async () => {
       await expect(
@@ -159,14 +160,14 @@ describe('trx', () => {
     test('should not retry query if max retries is zero', async () => {
       executeQuery.mockRejectedValueOnce(new Error('Boom!'));
 
-      await expect(executeTransaction).rejects.toThrow();
+      await expect(executeTransaction()).rejects.toThrow();
 
       expect(executeQuery).toBeCalledTimes(1);
     });
 
-    test.each([mkDatabaseError('40P01'), mkDatabaseError('40001')])(
+    test.each([[serializationError], [deadlockDetectedError]])(
       'should retry queries up to max retries times that throws retryable errors (%j)',
-      async (error) => {
+      async (error: DatabaseError) => {
         executeQuery.mockRejectedValue(error);
 
         await expect(executeTransaction({ maxRetries: 1 })).rejects.toThrow();
@@ -176,7 +177,7 @@ describe('trx', () => {
     );
 
     test('should retry queries that throws retryable errors up to two times by default', async () => {
-      executeQuery.mockRejectedValue(mkDatabaseError('40P01'));
+      executeQuery.mockRejectedValue(serializationError);
 
       await expect(
         executeTransaction({ maxRetries: undefined }),
@@ -194,7 +195,7 @@ describe('trx', () => {
     });
 
     test('should not retry queries if should retry predicate returns false', async () => {
-      executeQuery.mockRejectedValue(mkDatabaseError('40P01'));
+      executeQuery.mockRejectedValueOnce(mkDatabaseError('40P01'));
 
       await expect(
         executeTransaction({ maxRetries: 1, shouldRetry: () => false }),
@@ -204,7 +205,7 @@ describe('trx', () => {
     });
 
     test('should retry queries up to max retries times if should retry predicate returns true', async () => {
-      executeQuery.mockRejectedValueOnce(new Error('Boom!'));
+      executeQuery.mockRejectedValue(new Error('Boom!'));
 
       await expect(
         executeTransaction({ maxRetries: 1, shouldRetry: () => true }),
@@ -214,123 +215,89 @@ describe('trx', () => {
     });
   });
 
-  // describe('withSavepoint', () => {
-  //   it('throws an error if called with a client', async () => {
-  //     await expect(
-  //       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //       withSavepoint(client as any, () => query(client, sql`SELECT 1`)),
-  //     ).rejects.toThrowError(
-  //       'SAVEPOINT can only be used in transaction blocks',
-  //     );
-  //   });
-  //   it('throws an error if called outside a transaction', async () => {
-  //     await expect(
-  //       withSavepoint(client, () => query(client, sql`SELECT 1`)),
-  //     ).rejects.toThrowError(
-  //       'SAVEPOINT can only be used in transaction blocks',
-  //     );
-  //   });
+  describe('withSavepoint', () => {
+    const executeSavepoint = () => withSavepoint(client, executeQuery);
 
-  //   it('returns the value from the function', async () => {
-  //     await expect(
-  //       withTransaction(client, (tx) => withSavepoint(tx, async () => 'foo')),
-  //     ).resolves.toBe('foo');
-  //   });
+    test('should create savepoint before run queries', async () => {
+      await executeSavepoint();
 
-  //   it('does not blow up if throwing a non-Error', async () => {
-  //     await expect(
-  //       withTransaction(client, (tx) =>
-  //         withSavepoint(tx, async () => {
-  //           throw null;
-  //         }),
-  //       ),
-  //     ).rejects.toBeNull();
-  //   });
+      expect(client.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringMatching(/^SAVEPOINT .+_savepoint$/),
+      );
+    });
 
-  //   it('rolls back the savepoint if an error is thrown', async () => {
-  //     await withTransaction(client, async (tx) => {
-  //       await insertPet(tx);
-  //       await withSavepoint(tx, async (tx) => {
-  //         await insertPet(tx);
-  //         throw new Error('Boom!');
-  //       })
-  //         .then(() => {
-  //           throw new Error('Should not happen!');
-  //         })
-  //         .catch((err) => {
-  //           expect(err.message).toBe('Boom!');
-  //         });
-  //     });
-  //     expect(await getPetCount()).toBe(4);
-  //   });
+    test('should execute query after create savepoint', async () => {
+      await executeSavepoint();
 
-  //   it('rethrows an error after rolling back', async () => {
-  //     await expect(
-  //       withTransaction(client, async (tx) => {
-  //         await insertPet(tx);
-  //         await withSavepoint(tx, async (tx) => {
-  //           await insertPet(tx);
-  //           throw new Error('Boom!');
-  //         });
-  //       }),
-  //     ).rejects.toThrowError(new Error('Boom!'));
-  //     expect(await getPetCount()).toBe(3);
-  //   });
+      expect(client.query).toHaveBeenNthCalledWith(
+        2,
+        'insert into users (id) values (1) returning *',
+      );
+    });
 
-  //   it('can be nested (catch on 1st level)', async () => {
-  //     await withTransaction(client, async (tx) => {
-  //       await insertPet(tx);
-  //       await withSavepoint(tx, async (tx) => {
-  //         await insertPet(tx);
-  //         await withSavepoint(tx, async (tx) => {
-  //           await insertPet(tx);
-  //           throw new Error('Boom!');
-  //         });
-  //       })
-  //         .then(() => {
-  //           throw new Error('Should not happen!');
-  //         })
-  //         .catch((err) => {
-  //           expect(err.message).toBe('Boom!');
-  //         });
-  //     });
-  //     expect(await getPetCount()).toBe(4);
-  //   });
+    test('should rollback savepoint if query throws an error', async () => {
+      const error = new Error('Boom!');
 
-  //   it('can be nested (catch on 2nd level)', async () => {
-  //     await withTransaction(client, async (tx) => {
-  //       await insertPet(tx);
-  //       await withSavepoint(tx, async (tx) => {
-  //         await insertPet(tx);
-  //         await withSavepoint(tx, async (tx) => {
-  //           await insertPet(tx);
-  //           throw new Error('Boom!');
-  //         })
-  //           .then(() => {
-  //             throw new Error('Should not happen!');
-  //           })
-  //           .catch((err) => {
-  //             expect(err.message).toBe('Boom!');
-  //           });
-  //       });
-  //     });
-  //     expect(await getPetCount()).toBe(5);
-  //   });
+      executeQuery.mockImplementationOnce(() => {
+        throw error;
+      });
 
-  //   it('can be nested (no catch)', async () => {
-  //     await expect(
-  //       withTransaction(client, async (tx) => {
-  //         await insertPet(tx);
-  //         await withSavepoint(tx, async (tx) => {
-  //           await insertPet(tx);
-  //           await withSavepoint(tx, async (tx) => {
-  //             await insertPet(tx);
-  //             throw new Error('Boom!');
-  //           });
-  //         });
-  //       }),
-  //     ).rejects.toThrowError('Boom!');
-  //     expect(await getPetCount()).toBe(3);
-  //   });
-  // });
+      await expect(executeSavepoint()).rejects.toThrowError(error);
+
+      expect(client.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringMatching(
+          /^ROLLBACK TO SAVEPOINT .+_savepoint; RELEASE SAVEPOINT .+_savepoint$/,
+        ),
+      );
+    });
+
+    test('should rollback savepoint if query rejects with an error', async () => {
+      const error = new Error('Boom!');
+
+      executeQuery.mockRejectedValueOnce(error);
+
+      await expect(executeSavepoint()).rejects.toThrowError(error);
+
+      expect(client.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringMatching(
+          /^ROLLBACK TO SAVEPOINT .+_savepoint; RELEASE SAVEPOINT .+_savepoint$/,
+        ),
+      );
+    });
+
+    test('should not rollback savepoint if query rejects with error that cant be rolled back', async () => {
+      executeQuery.mockRejectedValueOnce(noActiveSqlTransactionError);
+
+      await expect(executeSavepoint()).rejects.toThrowError(
+        noActiveSqlTransactionError,
+      );
+
+      expect(client.query).not.toHaveBeenNthCalledWith(
+        2,
+        expect.stringMatching(
+          /^ROLLBACK TO SAVEPOINT .+_savepoint; RELEASE SAVEPOINT .+_savepoint$/,
+        ),
+      );
+    });
+
+    test('should release savepoint after query execution', async () => {
+      await executeSavepoint();
+
+      expect(client.query).toHaveBeenNthCalledWith(
+        3,
+        expect.stringMatching(/^RELEASE SAVEPOINT .+_savepoint$/),
+      );
+    });
+
+    test('should pass value returned by query', async () => {
+      const result = { id: 1, name: 'John' };
+
+      executeQuery.mockResolvedValueOnce(result);
+
+      await expect(executeSavepoint()).resolves.toEqual(result);
+    });
+  });
 });

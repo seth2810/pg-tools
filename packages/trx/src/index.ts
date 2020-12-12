@@ -95,10 +95,10 @@ async function performTransaction<Result, Client extends PgClient>(
     const result = await queries(tx);
     await tx.query('COMMIT');
     return result;
-  } catch (err) {
+  } catch (error) {
     await tx.query('ROLLBACK');
 
-    if (maxRetries > 0 && shouldRetry(err)) {
+    if (maxRetries > 0 && shouldRetry(error)) {
       return performTransaction(
         tx,
         beginStatement,
@@ -108,7 +108,7 @@ async function performTransaction<Result, Client extends PgClient>(
       );
     }
 
-    throw err;
+    throw error;
   }
 }
 
@@ -175,9 +175,9 @@ export async function withSavepoint<Result, Client extends PgClient>(
     const result = await queries(tx);
     await tx.query(`RELEASE SAVEPOINT ${savePoint}`);
     return result;
-  } catch (err) {
+  } catch (error) {
     const cantBeRolledBack =
-      err instanceof DatabaseError && err.code === noActiveSqlTransaction;
+      error instanceof DatabaseError && error.code === noActiveSqlTransaction;
 
     if (!cantBeRolledBack) {
       await tx.query(
@@ -185,7 +185,7 @@ export async function withSavepoint<Result, Client extends PgClient>(
       );
     }
 
-    throw err;
+    throw error;
   }
 }
 
