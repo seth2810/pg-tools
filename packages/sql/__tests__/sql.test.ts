@@ -152,14 +152,63 @@ describe('sql', () => {
       });
     });
   });
-});
 
-// Разобрать частые кейсы использования:
-// выборка с условием where,
-// like (с использованием %),
-// in,
-// подзапрос,
-// with,
-// join,
-// композиция sql добавлением фильтров (на страничке есть фильтр по условию and по множеству полей),
-// вставка объекта.
+  describe('helpers', () => {
+    describe('raw', () => {
+      test.each([
+        ['boolean', true],
+        ['string', 'username'],
+        ['number', Number.MAX_SAFE_INTEGER],
+      ])(
+        'should convert primitive value into injectable query with single text node (%j)',
+        (_, value) => {
+          expect(sql.raw(value)).toHaveProperty('nodes', [
+            new TextNode(String(value)),
+          ]);
+        },
+      );
+    });
+
+    describe('join', () => {
+      test('should join conditions with passed delimiter', () => {
+        const ids = [1, 2, 3];
+        const [nameLike, active] = ['user', true];
+        const conditions = [
+          sql.inject`active = ${active}`,
+          sql.inject`id in (${ids})`,
+          sql.inject`name like '%${nameLike}%'`,
+        ];
+
+        expect(sql.join(conditions, ' and ').freeze).toEqual({
+          text: "active = $1 and id in ($2) and name like '%$3%'",
+          values: [active, ids, nameLike],
+        });
+      });
+    });
+
+    describe('set', () => {
+      test('should make insert expression using passed keys from records', () => {
+        const users = [
+          { id: 1, name: 'john', age: 14 },
+          { id: 2, name: 'selena', age: 23 },
+        ];
+
+        expect(sql.insert(users, 'name', 'age').freeze).toEqual({
+          text: '("name","age") values ($1, $2), ($3, $4)',
+          values: ['john', 14, 'selena', 23],
+        });
+      });
+    });
+
+    describe('update', () => {
+      test('should make set expression using passed keys from record', () => {
+        const updatedUser = { id: 1, name: 'alan', age: 23 };
+
+        expect(sql.set(updatedUser, 'name', 'age').freeze).toEqual({
+          text: 'set ("name","age") = row($1, $2)',
+          values: ['alan', 23],
+        });
+      });
+    });
+  });
+});

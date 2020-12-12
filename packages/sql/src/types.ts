@@ -5,8 +5,6 @@ export type Placeholders = ReadonlyArray<BindingValue | InjectableQuery>;
 
 export type QueryFactory<Result> = (nodes: QueryNodes) => Result;
 
-type JoinSeparator = 'and' | 'or';
-
 export interface SqlInstance {
   (
     strings: TemplateStringsArray,
@@ -22,6 +20,16 @@ export interface SqlInstance {
 
   join: (
     queries: ReadonlyArray<InjectableQuery>,
-    separator: JoinSeparator,
+    delimiter: string,
+  ) => InjectableQuery;
+
+  insert: <Patch extends Record<string, BindingValue>>(
+    records: ReadonlyArray<Patch>,
+    ...keys: ReadonlyArray<keyof Patch>
+  ) => InjectableQuery;
+
+  set: <Patch extends Record<string, BindingValue>>(
+    patch: Patch,
+    ...keys: ReadonlyArray<keyof Patch>
   ) => InjectableQuery;
 }
