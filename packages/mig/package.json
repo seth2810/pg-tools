@@ -1,0 +1,47 @@
+{
+  "name": "mig",
+  "version": "0.0.1",
+  "description": "PostgreSQL migration tool",
+  "keywords": [
+    "pg",
+    "migrations"
+  ],
+  "author": "Roman Gafurov <gafurov.roma89@gmail.com>",
+  "homepage": "https://github.com/seth2810/pg-tools/tree/master/packages/mig#readme",
+  "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/seth2810"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seth2810/pg-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/seth2810/pg-tools/issues"
+  },
+  "dependencies": {
+    "@pg-tools/trx": "^0.0.1",
+    "lodash": "4.17.20",
+    "minimist": "1.2.5",
+    "mkdirp": "1.0.4",
+    "pg": "7.14.0",
+    "pg-escape": "0.2.0",
+    "prettyjson": "1.2.1",
+    "req-from": "3.0.0",
+    "umzug": "3.0.0-beta.12"
+  },
+  "devDependencies": {
+    "@types/lodash": "4.14.165",
+    "@types/minimist": "1.2.1",
+    "@types/mkdirp": "1.0.1",
+    "@types/node": "14.14.13",
+    "@types/pg": "7.14.0",
+    "@types/pg-escape": "0.2.1",
+    "@types/prettyjson": "0.0.29"
+  }
+}
