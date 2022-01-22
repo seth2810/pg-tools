@@ -21,7 +21,7 @@
     "url": "https://github.com/seth2810/pg-tools/issues"
   },
   "dependencies": {
-    "nanoid": "3.1.20",
+    "nanoid": "3.1.31",
     "pg-protocol": "1.4.0"
   },
   "devDependencies": {
